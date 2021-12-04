@@ -10,6 +10,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+def Floyd_Warshall(W):
+    D = W.copy()
+    n = D.shape[0]
+    for k in range(n):
+        for i in range(n):
+            D[i, :] = np.minimum(D[i, :], D[i, k] + D[k, :])
+    return D
+
+
 def neighbourhood_matrix(X, k=1):
     n = int(len(X))
 
@@ -24,7 +33,10 @@ def neighbourhood_matrix(X, k=1):
             D[i][j] = math.sqrt(abs(X[i][0] - X[j][0]) + abs(X[i][1] - X[j][1]) + abs(X[i][2] - X[j][2]))
 
     print(D)
+
     # Calculate k closest neighbours
+    # Creating D_copy has no other point then to show the difference and not "spoil" the original matrix D
+
     D_copy = D.copy()
     for j in range(k):
         for i in range(0, len(D_copy)):
@@ -32,6 +44,7 @@ def neighbourhood_matrix(X, k=1):
 
             max_idx = np.argmax(D_copy[i])
             W[i][max_idx] = D[i][max_idx]
+            D_copy[i][max_idx] = 0
     print(W)
     return W
 
