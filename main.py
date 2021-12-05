@@ -43,6 +43,29 @@ def k_weight_matrix(D, k=2):
     return W
 
 
+def e_weight_matrix(D, e=1):
+    # Calculate closest neighbours in range e
+    # Creating D_copy has no other point then to show the difference and not "spoil" the original matrix D
+    n = int(len(D))
+
+    infinity = 10.
+    W = np.full((n, n), infinity)
+
+    D_copy = D.copy()
+    for i in range(0, len(D_copy)):
+        W[i][i] = 0
+        for j in range(len(D_copy[i])):
+            if D_copy[i][j] >= e:
+                W[i][j] = D[i][j]
+
+    if (W == W.T).all():
+        print("Weight matrix check: correct")
+    else:
+        print("Weight matrix check: failed")
+
+    return W
+
+
 def distance_matrix(X):
     n = int(len(X))
     D = np.zeros(shape=(n, n))
@@ -84,9 +107,13 @@ def gram_matrix(D, d):
 if __name__ == '__main__':
     X, Y = generate_data()
     D = distance_matrix(X)
-    W = k_weight_matrix(D, 5)
-    D = Floyd_Warshall(W)
+
+    W_k = k_weight_matrix(D, 5)
+    W_e = e_weight_matrix(D, 0.5)
+
+    D = Floyd_Warshall(W_k)
     Z = gram_matrix(D, 2)
+
     # print(len(Z))
     # print(len(Z[0]))
 
