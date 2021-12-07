@@ -1,11 +1,9 @@
-import copy
 import math
-
+import plotly.graph_objects as po
 import sklearn
 from sklearn import datasets
 import random
 from plotly.express import scatter_3d
-import numpy
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -24,17 +22,21 @@ def k_weight_matrix(D, k=2):
     # Creating D_copy has no other point then to show the difference and not "spoil" the original matrix D
     n = int(len(D))
 
-    infinity = 10.
+    infinity = 1000.
     W = np.full((n, n), infinity)
 
     D_copy = D.copy()
+
+    for o in range(n):
+        D_copy[o][o] = 1000
+
     for i in range(0, len(D_copy)):
-        for j in range(k):
+        for j in range(0, k):
             W[i][i] = 0
 
             max_idx = np.argmin(D_copy[i])
             W[i][max_idx] = D[i][max_idx]
-            D_copy[i][max_idx] = 0
+            D_copy[i][max_idx] = 1000
 
     if (W == W.T).all():
         print("Weight matrix check: correct")
@@ -48,14 +50,14 @@ def e_weight_matrix(D, e=1):
     # Creating D_copy has no other point then to show the difference and not "spoil" the original matrix D
     n = int(len(D))
 
-    infinity = 10.
+    infinity = 1000.
     W = np.full((n, n), infinity)
 
     D_copy = D.copy()
     for i in range(0, len(D_copy)):
         W[i][i] = 0
         for j in range(len(D_copy[i])):
-            if D_copy[i][j] >= e:
+            if D_copy[i][j] <= e:
                 W[i][j] = D[i][j]
 
     if (W == W.T).all():
@@ -78,50 +80,73 @@ def distance_matrix(X):
     return D
 
 
-def generate_data():
-    random.seed(1234)
-    # print("Hi")
-    X, Y = sklearn.datasets.make_swiss_roll(10)
-    # print("Before data")
-    # print(X)
-    # print(smoke_it)
-
-    # show the data
-    # fig = scatter_3d(x=X[:, 0], y=X[:, 1], z=X[:, 2], color=Y)
-    # fig.show()
+def generate_data(n=800, seed=1234):
+    random.seed(seed)
+    X, Y = sklearn.datasets.make_swiss_roll(n)
     return X, Y
 
 
+def show_swiss(X, Y):
+    # show the data
+    fig = scatter_3d(x=X[:, 0], y=X[:, 1], z=X[:, 2], color=Y)
+    fig.show()
+
+
 def gram_matrix(D, d):
+    # D = Distances matrix
+    # d = number of output dimentions
+
     n = D.shape[0]
     H = np.eye(n) - np.ones((n, n)) / n
     G = - H @ (D * D) @ H / 2
     Lambda, V = np.linalg.eigh(G)
     Lambda, V = Lambda[:-d - 1:-1], V[:, :-d - 1:-1]
     Z = np.diag(np.sqrt(Lambda)) @ V.T
-    # print("After data")
-    # print(Z)
     return Z
 
 
+def plot_graph_3d(x, W, color=None):
+    n = W.shape[0]
+    edges_x, edges_y, edges_z = [], [], []
+
+    for i in range(0, n):
+        for j in range(0, i):
+            if 0 < W[i, j] < 1000:
+                edges_x.extend([x[0, i], x[0, j], None])
+                edges_y.extend([x[1, i], x[1, j], None])
+                edges_z.extend([x[2, i], x[2, j], None])
+
+    edges_trace = po.Scatter3d(x=edges_x, y=edges_y, z=edges_z, mode='lines')
+    nodes_trace = po.Scatter3d(x=x[0], y=x[1], z=x[2], mode='markers',
+                               marker=dict(color=color, size=5.0))
+
+    figure = po.Figure(data=[edges_trace, nodes_trace])
+    figure.show()
+
+
 if __name__ == '__main__':
-    X, Y = generate_data()
+    X, Y = generate_data(n=800)
+    # show_swiss(X, Y)
     D = distance_matrix(X)
 
-    W_k = k_weight_matrix(D, 5)
-    W_e = e_weight_matrix(D, 0.5)
+    k = 11
+    e = 3
 
-    D = Floyd_Warshall(W_k)
-    Z = gram_matrix(D, 2)
+    W_k = k_weight_matrix(D, k)
+    W_e = e_weight_matrix(D, e)
+    plot_graph_3d(X.T, W_e, Y)
+
+    D_optimised = Floyd_Warshall(W_k)
+
+    Z = gram_matrix(D_optimised, 2)
 
     # print(len(Z))
     # print(len(Z[0]))
 
-    # x1 = Z[0]
-    # y1 = Z[1]
-    # fig = plt.figure()
-    # ax1 = fig.add_subplot(111)
+    x1 = Z[0]
+    y1 = Z[1]
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
 
-    # ax1.scatter(x1, y1, s=10, c='blue', marker="o", label='non-whitened')
-    # plt.legend(loc='lower left')
-    # plt.savefig('scatter_plot.jpg')
+    ax1.scatter(x=Z[0], y=Z[1], c=Y)
+    plt.savefig('scatter_plot.jpg')
