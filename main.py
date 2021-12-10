@@ -129,12 +129,12 @@ if __name__ == '__main__':
     # show_swiss(X, Y)
     D = distance_matrix(X)
 
-    k = 11
-    e = 3
+    k = 7
+    e = 2.5
 
     W_k = k_weight_matrix(D, k)
     W_e = e_weight_matrix(D, e)
-    plot_graph_3d(X.T, W_e, Y)
+    plot_graph_3d(X.T, W_k, Y)
 
     D_optimised = Floyd_Warshall(W_k)
 
